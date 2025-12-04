@@ -49,8 +49,8 @@ def extrair_keywords(texto: str, k: int):
 if __name__ == "__main__":
     print("--- Teste de Integração ---")
     
-    tema = "Futebol"
-    limite = 2 # Aumentei para 2 para testar a lista
+    tema = "Política"
+    limite = 1 
     
     lista = buscar_manchetes(tema, limite)
     print(f"Encontradas: {len(lista)}")

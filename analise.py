@@ -19,61 +19,47 @@ def configurar_nltk():
 
 configurar_nltk()
 
+# 2. FUNÇÕES DA INTELIGÊNCIA ARTIFICIAL (RESUMO)
+
 def _descobrir_modelo_disponivel():
     """
-    Função auxiliar inteligente:
-    Consulta a API para ver qual nome de modelo está ativo para sua chave.
-    Isso evita o erro 404 se o nome mudar (ex: gemini-pro vs gemini-1.0-pro).
+    Pergunta ao Google qual modelo está ativo para evitar erro 404.
     """
     url_list = f"https://generativelanguage.googleapis.com/v1beta/models?key={API_KEY}"
     try:
         response = requests.get(url_list)
         if response.status_code == 200:
             dados = response.json()
-            # Procura por modelos preferidos na lista
+            # Prioridade: Flash > Pro > 1.5
             for modelo in dados.get('models', []):
-                nome = modelo['name'] # ex: models/gemini-1.5-flash
+                nome = modelo['name']
                 metodos = modelo.get('supportedGenerationMethods', [])
-                
-                # Queremos um modelo que gere texto (generateContent)
                 if 'generateContent' in metodos:
-                    # Damos preferência ao Flash ou Pro
                     if 'flash' in nome: return nome
                     if 'gemini-pro' in nome: return nome
-                    if 'gemini-1.5' in nome: return nome
-            
-            # Se não achou os preferidos, pega o primeiro que gera texto
-            for modelo in dados.get('models', []):
-                if 'generateContent' in modelo.get('supportedGenerationMethods', []):
-                    return modelo['name']
-                    
-    except Exception as e:
-        print(f"[Aviso] Erro ao listar modelos: {e}")
-    
-    # Fallback (Se a listagem falhar, tentamos o mais provável)
-    return "models/gemini-1.5-flash"
+    except:
+        pass
+    return "models/gemini-1.5-flash" # Fallback padrão
 
-# Variável global para não buscar toda vez (cache)
+# Cache para não ficar perguntando toda hora
 NOME_MODELO_ATUAL = None
 
 def gerar_resumo_ia(texto_completo: str):
     global NOME_MODELO_ATUAL
     
     if "COLE_SUA" in API_KEY:
-        return "ERRO: Cole a chave do Google no arquivo analise.py"
+        return "ERRO: A chave da API sumiu! Cole ela de volta no analise.py"
 
     if not texto_completo or len(texto_completo) < 50:
         return "Texto muito curto para resumir."
 
-    # 1. Descobre o modelo certo na primeira execução
+    # Configura o modelo na primeira vez
     if NOME_MODELO_ATUAL is None:
         NOME_MODELO_ATUAL = _descobrir_modelo_disponivel()
-        print(f"[Python] IA Configurada usando modelo: {NOME_MODELO_ATUAL}")
+        print(f"[Python] Usando modelo de IA: {NOME_MODELO_ATUAL}")
 
-    # 2. Monta a URL com o modelo descoberto (remove 'models/' se vier duplicado)
     modelo_limpo = NOME_MODELO_ATUAL.replace("models/", "")
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{modelo_limpo}:generateContent?key={API_KEY}"
-    
     headers = {"Content-Type": "application/json"}
 
     prompt_text = (
@@ -82,38 +68,59 @@ def gerar_resumo_ia(texto_completo: str):
         "Texto:\n\n" + texto_completo
     )
 
-    payload = {
-        "contents": [{
-            "parts": [{"text": prompt_text}]
-        }]
-    }
+    payload = {"contents": [{"parts": [{"text": prompt_text}]}]}
 
     try:
         response = requests.post(url, headers=headers, data=json.dumps(payload))
-        
         if response.status_code == 200:
             resultado = response.json()
             if 'candidates' in resultado and resultado['candidates']:
                 return resultado['candidates'][0]['content']['parts'][0]['text'].strip()
             else:
-                return "A IA não retornou resposta (bloqueio de segurança)."
+                return "A IA bloqueou o conteúdo (Safety Filter)."
         else:
             return f"Erro na API ({response.status_code}): {response.text}"
-            
     except Exception as e:
         return f"Falha de conexão: {str(e)}"
 
+# 3. FUNÇÕES DE PALAVRAS-CHAVE (COMPOSTAS/BIGRAMAS)
+
 def calcular_palavras_chave(texto: str, quantidade: int):
-    # Função mantida idêntica
     if not texto: return []
     try:
+        # Configura stopwords e adiciona algumas comuns em jornalismo
         lista_stopwords = set(stopwords.words('portuguese'))
+        lista_stopwords.update(['disse', 'afirmou', 'segundo', 'sobre', 'após', 'entre', 'para', 'pelo'])
+        
         palavras = word_tokenize(texto.lower())
-        palavras_filtradas = [
+        
+        # Filtra palavras simples
+        palavras_limpas = [
             p for p in palavras 
-            if p not in lista_stopwords and p.isalnum() and len(p) > 4
+            if p not in lista_stopwords and p.isalnum() and len(p) > 2
         ]
-        contador = Counter(palavras_filtradas)
-        return contador.most_common(quantidade)
-    except:
+        
+        # Contagem de Unigramas (palavras soltas)
+        contador = Counter(palavras_limpas)
+        
+        # Contagem de Bigramas (palavras compostas)
+        bigramas = zip(palavras_limpas, palavras_limpas[1:])
+        bigramas_strings = [" ".join(bg) for bg in bigramas]
+        contador_bigramas = Counter(bigramas_strings)
+        
+        # Estratégia: Junta os Top Unigramas + Top Bigramas (se frequência >= 2)
+        top_simples = contador.most_common(quantidade)
+        top_compostas = [
+            (bg, count) for bg, count in contador_bigramas.most_common(quantidade)
+            if count >= 2
+        ]
+        
+        # Combina e ordena tudo pela contagem
+        tudo = top_simples + top_compostas
+        tudo.sort(key=lambda x: x[1], reverse=True)
+        
+        return tudo[:quantidade]
+
+    except Exception as e:
+        print(f"Erro NLP: {e}")
         return []
