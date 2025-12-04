@@ -6,8 +6,7 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from collections import Counter
 
-# --- CONFIGURAÇÃO MANUAL DA IA ---
-# Cole sua chave do Google aqui (a que termina em ...9Aek)
+
 API_KEY = "AIzaSyAGVOIPV3bPhx4YKYf5ZKsqqmbox509Aek" 
 
 def configurar_nltk():
