@@ -17,14 +17,10 @@ def ler_noticia(url: str):
     Função chamada pelo Menu C++ Opção 2.
     """
     print(f"[Python] Baixando e processando notícia...")
-    
-    # 1. Scraper baixa
     dados = scraper.baixar_e_extrair(url)
     
     if dados["sucesso"]:
         print(f"[Python] Enviando para Inteligência Artificial...")
-        
-        # 2. IA Resume
         resumo_ia = analise.gerar_resumo_ia(dados["texto"])
         
         return {
@@ -53,17 +49,17 @@ def extrair_keywords(texto: str, k: int):
 if __name__ == "__main__":
     print("--- Teste de Integração ---")
     
-    # Busca 2 notícias sobre Futebol para testar o loop
     tema = "Futebol"
-    limite = 1
+    limite = 2 # Aumentei para 2 para testar a lista
     
     lista = buscar_manchetes(tema, limite)
     print(f"Encontradas: {len(lista)}")
     
     for i, item in enumerate(lista):
+        # MUDANÇA AQUI: Agora mostramos Data e Fonte no print
         print(f"\n--- Notícia {i+1}: {item['titulo']} ---")
+        print(f"    Data: {item['data']} | Fonte: {item['fonte']}") 
         
-        # Tenta ler a notícia
         conteudo = ler_noticia(item['link'])
         
         if conteudo['status'] == "OK":
@@ -73,11 +69,8 @@ if __name__ == "__main__":
             print(f"RESUMO IA:\n{conteudo['resumo']}")
             print("-" * 40)
             
-            # Teste de Keywords
             time.sleep(1)
             kws = extrair_keywords(conteudo['texto_completo'], 5)
             print(f"Keywords: {kws}")
         else:
             print(f"FALHA: {conteudo['resumo']}")
-        
-      

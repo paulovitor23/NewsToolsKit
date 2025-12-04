@@ -14,7 +14,6 @@ FEEDS_DIRETOS = [
 
 def _limpar_texto_bruto(texto):
     if not texto: return ""
-    # Separa palavras coladas
     texto = re.sub(r'(?<=[a-z])(?=[A-Z][a-z]+:)', ' ', texto)
     
     linhas = texto.split('\n')
@@ -46,10 +45,14 @@ def buscar_rss_google(tema: str, limite: int):
                 resumo = entry.summary.lower() if 'summary' in entry else ""
                 
                 if tema in titulo or tema in resumo:
+                    # Tenta pegar a data de publicação ou atualização
+                    # Se não achar nenhum, aí sim usa "Data desconhecida"
+                    data_publicacao = entry.get("published", entry.get("updated", "Data desconhecida"))
+                    
                     resultados.append({
                         "titulo": entry.title,
                         "link": entry.link,
-                        "data": "Recente",
+                        "data": data_publicacao, # <--- MUDANÇA AQUI
                         "fonte": fonte["nome"]
                     })
         except: continue
@@ -62,10 +65,13 @@ def buscar_rss_google(tema: str, limite: int):
                 feed = feedparser.parse(fonte["url"])
                 for entry in feed.entries:
                     if len(resultados) >= limite: break
+                    
+                    data_publicacao = entry.get("published", entry.get("updated", "Data desconhecida"))
+
                     resultados.append({
                         "titulo": entry.title,
                         "link": entry.link,
-                        "data": "Recente",
+                        "data": data_publicacao, # <--- MUDANÇA AQUI
                         "fonte": fonte["nome"]
                     })
             except: continue
@@ -79,23 +85,20 @@ def baixar_e_extrair(url: str):
     }
 
     try:
-        # 1. Baixamos "na mão" com requests (muito mais forte que o downloader do newspaper)
         response = requests.get(url, headers=headers, timeout=15)
         response.raise_for_status() 
 
-        
         article = Article(url)
         article.set_html(response.text) 
         article.parse()
         
-        # 3. Limpeza
         texto_limpo = _limpar_texto_bruto(article.text)
         
         return {
             "sucesso": True,
             "titulo": article.title,
             "texto": texto_limpo, 
-            "url_real": response.url # URL final após redirects
+            "url_real": response.url
         }
     except Exception as e:
         return {"sucesso": False, "erro": str(e)}
