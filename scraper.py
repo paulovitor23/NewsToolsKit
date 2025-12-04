@@ -31,7 +31,7 @@ def _limpar_texto_bruto(texto):
     return "\n".join(linhas_limpas)
 
 def buscar_rss_google(tema: str, limite: int):
-    # Função de busca (mantida idêntica para não quebrar compatibilidade)
+    
     resultados = []
     tema = tema.lower()
     
@@ -73,10 +73,7 @@ def buscar_rss_google(tema: str, limite: int):
     return resultados
 
 def baixar_e_extrair(url: str):
-    """
-    CORREÇÃO: Usa requests para baixar o HTML (resolve o erro de 30 redirects)
-    e depois passa para o newspaper apenas processar.
-    """
+    
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     }
@@ -84,11 +81,11 @@ def baixar_e_extrair(url: str):
     try:
         # 1. Baixamos "na mão" com requests (muito mais forte que o downloader do newspaper)
         response = requests.get(url, headers=headers, timeout=15)
-        response.raise_for_status() # Garante que baixou (código 200)
+        response.raise_for_status() 
 
-        # 2. Criamos o Article mas injetamos o HTML que já baixamos
+        
         article = Article(url)
-        article.set_html(response.text) # <--- O PULO DO GATO
+        article.set_html(response.text) 
         article.parse()
         
         # 3. Limpeza
