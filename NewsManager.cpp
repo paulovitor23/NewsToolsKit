@@ -1,5 +1,7 @@
 #include "NewsManager.h"
 #include <iostream>
+#include <cctype>
+#include <algorithm>
 #include <iomanip> // Para std::setprecision
 
 // Construtor vazio
@@ -41,6 +43,12 @@ bool NewsManager::BuscarNovasNoticias(std::string tema) {
             if (completa.titulo.empty()) completa.titulo = m.titulo;
             if (completa.data.empty()) completa.data = m.data;
             if (completa.fonte.empty()) completa.fonte = m.fonte;
+
+            // Isso ajuda no cache futuro e na precisão dos dados
+            if (!completa.url.empty() && completa.url != m.url) {
+                // Imprime o arquivo de debug
+                std::cout << " [Redirect] " << m.url << " -> " << completa.url << std::endl;
+            }
             
             loteAtual.push_back(completa);
         }
@@ -112,21 +120,35 @@ const std::vector<NewsStructure>& NewsManager::GetLote() const {
     return loteAtual;
 }
 
+std::string ToLower(std::string s) {
+    std::transform(s.begin(), s.end(), s.begin(),
+                   [](unsigned char c){ return std::tolower(c); });
+    return s;
+}
+
 // Filtro por fonte (remove o que não bate)
 // Fácil de modificar para não remover
 void NewsManager::FiltrarPorFonte(std::string fonteAlvo) {
     std::vector<NewsStructure> filtrado;
+    std::string alvoLimpo = ToLower(fonteAlvo);
+
     // Itera pelas notícias e separa pela fonte desejada
     for (const auto& news : loteAtual) {
+        std::string fonteAtual = ToLower(news.fonte);
         // Busca substring
         // .find garante essa busca parcial
-        if (news.fonte.find(fonteAlvo) != std::string::npos) {
+        if (fonteAtual.find(alvoLimpo) != std::string::npos) {
             filtrado.push_back(news);
         }
     }
-    // Substitui o lote atual
-    loteAtual = filtrado;
-    std::cout << "Filtro aplicado. Restaram " << loteAtual.size() << " noticias." << std::endl;
+    // Feedback visual importante se zerar a lista
+    if (filtrado.empty()) {
+        std::cout << "[Aviso] Nenhuma noticia encontrada para a fonte '" << fonteAlvo << "'." << std::endl;
+        std::cout << "O lote atual nao foi alterado." << std::endl;
+    } else {
+        loteAtual = filtrado;
+        std::cout << "Filtro aplicado. Restaram " << loteAtual.size() << " noticias." << std::endl;
+    }
 }
 
 void NewsManager::ProcessarKeywords(int indice) {

@@ -1,4 +1,6 @@
 #include <iostream>
+#include <string>
+#include <algorithm>
 #include <limits> // Para limpar o buffer de entrada (cin.ignore)
 #include "PythonBridge.h"
 #include "NewsManager.h"
