@@ -7,7 +7,7 @@ from nltk.tokenize import word_tokenize
 from collections import Counter
 
 
-API_KEY = "AIzaSyBNY70_N4qGTtIHQnzaNSbpHi5Dk3-HtBw" 
+API_KEY = "Minha-Chave" 
 
 def configurar_nltk():
     recursos = ['punkt', 'stopwords', 'punkt_tab']

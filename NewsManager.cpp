@@ -61,7 +61,7 @@ bool NewsManager::BuscarNovasNoticias(std::string tema) {
 // Pega uma notícia do lote atual pelo índice
 NewsStructure* NewsManager::GetNoticia(int indice) {
     // Verifica se é um índice válido
-    if (indice >= 0 && indice < loteAtual.size()) {
+    if (indice >= 0 && static_cast<size_t>(indice) < loteAtual.size()) {
         // Retorna o endereço da notícia
         return &loteAtual[indice];
     }
