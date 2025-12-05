@@ -1,0 +1,113 @@
+================================================================================
+GLOSSÁRIO TÉCNICO: MÉTODOS DA BIBLIOTECA PYBIND11
+Projeto: NewsToolkit CLI (C++ / Python)
+================================================================================
+
+Este documento lista os métodos e tipos da biblioteca `pybind11` utilizados na 
+integração entre o núcleo C++ e os scripts Python, conforme implementado nos 
+arquivos `main.cpp`, `PythonBridge.h` e `PythonBridge.cpp`.
+
+--------------------------------------------------------------------------------
+1. INICIALIZAÇÃO E CICLO DE VIDA
+--------------------------------------------------------------------------------
+Responsável por ligar e desligar o interpretador Python dentro do processo C++.
+
+* py::scoped_interpreter
+  - Onde aparece: main.cpp
+  - Parâmetros: Nenhum (usado na construção `guard{}`).
+  - Funcionalidade: Inicializa o interpretador Python embutido. O interpretador 
+    permanece ativo enquanto esta variável existir (escopo da função main).
+    Ao sair do escopo, o Python é finalizado automaticamente.
+
+--------------------------------------------------------------------------------
+2. IMPORTAÇÃO E MÓDULOS
+--------------------------------------------------------------------------------
+Métodos para carregar scripts (.py) e bibliotecas padrão do Python.
+
+* py::module (Tipo)
+  - Onde aparece: PythonBridge.h (ex: `static py::module searcher_module`)
+  - Funcionalidade: Objeto C++ que representa um módulo Python carregado na memória.
+
+* py::module::import(const char* name)
+  - Onde aparece: PythonBridge.cpp
+  - Parâmetros: Nome do módulo ou arquivo (ex: "sys", "news_searcher").
+  - Funcionalidade: Equivalente ao `import` do Python. Carrega o script e retorna
+    o objeto do módulo.
+
+--------------------------------------------------------------------------------
+3. ACESSO A ATRIBUTOS
+--------------------------------------------------------------------------------
+Como o C++ acessa variáveis, funções ou objetos dentro de um módulo Python.
+
+* .attr(const char* name)
+  - Onde aparece: PythonBridge.cpp (ex: `sys.attr("path")`)
+  - Parâmetros: Nome do atributo (string).
+  - Funcionalidade: Retorna o atributo solicitado de um objeto Python. Usado para
+    pegar funções específicas dentro dos scripts (ex: `buscar_manchetes`).
+
+* py::object (Tipo)
+  - Onde aparece: PythonBridge.cpp
+  - Funcionalidade: Um tipo genérico ("wrapper") que pode armazenar qualquer
+    coisa vinda do Python (número, string, lista, função, None, etc.).
+
+--------------------------------------------------------------------------------
+4. EXECUÇÃO (CHAMADA DE FUNÇÃO)
+--------------------------------------------------------------------------------
+Como executar código Python a partir do C++.
+
+* operator()(Args... args)
+  - Onde aparece: PythonBridge.cpp (ex: `func(tema, limite)`)
+  - Parâmetros: Argumentos esperados pela função Python.
+  - Funcionalidade: Permite chamar um `py::object` como se fosse uma função C++.
+    Os tipos primitivos (int, string) são convertidos automaticamente.
+
+--------------------------------------------------------------------------------
+5. CONVERSÃO DE TIPOS (CASTING)
+--------------------------------------------------------------------------------
+Transforma os dados retornados pelo Python em tipos nativos do C++.
+
+* .cast<TipoC++>()
+  - Onde aparece: PythonBridge.cpp (ex: `item.cast<py::dict>()`)
+  - Parâmetros: O tipo C++ alvo (ex: `std::string`, `int`, `std::vector`).
+  - Funcionalidade: Força a conversão do objeto Python para C++.
+    Graças ao header `<pybind11/stl.h>`, converte estruturas complexas como
+    listas e dicionários para `std::vector` e `std::map`.
+
+--------------------------------------------------------------------------------
+6. MANIPULAÇÃO DE DICIONÁRIOS
+--------------------------------------------------------------------------------
+Interação com objetos do tipo `dict` (JSON-like) retornados pelos scripts.
+
+* py::dict (Tipo)
+  - Onde aparece: PythonBridge.cpp
+  - Funcionalidade: Representação C++ de um dicionário Python `{}`.
+
+* .contains(const char* key)
+  - Onde aparece: PythonBridge.cpp
+  - Parâmetros: A chave (string) a ser verificada.
+  - Funcionalidade: Retorna true se a chave existir no dicionário. Essencial
+    para evitar erros (KeyError) antes de tentar ler um valor.
+
+* operator[](const char* key)
+  - Onde aparece: PythonBridge.cpp (ex: `dados["titulo"]`)
+  - Funcionalidade: Acessa o valor associado à chave. O retorno ainda é um
+    `py::object`, necessitando de `.cast<T>()` para uso final.
+
+--------------------------------------------------------------------------------
+7. TRATAMENTO DE ERROS
+--------------------------------------------------------------------------------
+Segurança para evitar falhas silenciosas ou crashes do sistema.
+
+* py::error_already_set (Exceção)
+  - Onde aparece: PythonBridge.cpp (blocos `catch`)
+  - Funcionalidade: Captura exceções que ocorreram dentro do ambiente Python
+    (ex: arquivo não encontrado, erro de sintaxe, site offline).
+
+* .what()
+  - Onde aparece: PythonBridge.cpp
+  - Funcionalidade: Retorna a descrição do erro Python como uma string C++.
+
+* .is_none()
+  - Onde aparece: PythonBridge.cpp
+  - Funcionalidade: Verifica se o objeto é `None`. Usado para checar se a
+    importação de um módulo falhou ou se uma função não retornou dados.
