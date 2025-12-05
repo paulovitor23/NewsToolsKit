@@ -14,7 +14,7 @@ bool NewsManager::BuscarNovasNoticias(std::string tema) {
     // Extrair os dados básicos
     // PythonBridge::BuscarManchetes retorna vector<NewsStructure> incompleto
     // Limitado a 3 notícias para a apresentação
-    std::vector<NewsStructure> manchetes = PythonBridge::BuscarManchetes(tema, 3);
+    std::vector<NewsStructure> manchetes = PythonBridge::BuscarManchetes(tema, 6);
 
     // Garante que a busca foi realizada com sucesso
     if (manchetes.empty()) {
