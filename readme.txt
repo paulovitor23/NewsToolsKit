@@ -6,9 +6,6 @@ AUTORES:
 - Paulo Vitor Couto Doederlein
 - Erik Branco Queiroz
 
-DISCIPLINA: Linguagens de Programação
-DATA: Dezembro/2025
-
 ================================================================================
 1. VISÃO GERAL
 ================================================================================
